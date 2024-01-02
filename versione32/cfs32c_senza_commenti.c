@@ -160,11 +160,19 @@ float calculate_cf_corr(float *feature, float *labels, int n) {
     printf("Correlation: %f\n", r_cf);
     return r_cf;
 }
-
+/*
 float* getColumn(float* matrix, int rows, int cols, int col_index) {
     float* column = malloc(rows * sizeof(float));
     for (int i = 0; i < rows; ++i) {
         column[i] = matrix[i * cols + col_index];
+    }
+    return column;
+}
+*/
+float* getColumn(float* matrix, int rows, int cols, int col_index){
+    float* column = malloc(rows * sizeof(float));
+    for(int i=0; i<rows; i++){
+        column[i] = matrix[i*rows + col_index];
     }
     return column;
 }
