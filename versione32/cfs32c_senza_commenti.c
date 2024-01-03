@@ -120,7 +120,7 @@ float calculate_mean(float *data, int n) {
         sum += data[i];
     }
     float mean = sum / n;
-    printf("Mean: %f\n", mean);
+    //printf("Mean: %f\n", mean);
     return mean;
 }
 
@@ -132,7 +132,7 @@ float calculate_std_dev(float *data, int n) {
         variance += pow(data[i] - mean, 2);
     }
     float std_dev = sqrt(variance / (n - 1));
-    printf("Standard Deviation: %f\n", std_dev);
+    //printf("Standard Deviation: %f\n", std_dev);
     return std_dev;
 }
 
@@ -157,10 +157,10 @@ float calculate_cf_corr(float *feature, float *labels, int n) {
     float std_dev = calculate_std_dev(feature, n);
 
     float r_cf = ((mean_0 - mean_1) / std_dev) * sqrt((count_0 * count_1) / pow(n, 2));
-    printf("Correlation: %f\n", r_cf);
+    //printf("Correlation: %f\n", r_cf);
     return r_cf;
 }
-/*
+
 float* getColumn(float* matrix, int rows, int cols, int col_index) {
     float* column = malloc(rows * sizeof(float));
     for (int i = 0; i < rows; ++i) {
@@ -168,26 +168,33 @@ float* getColumn(float* matrix, int rows, int cols, int col_index) {
     }
     return column;
 }
-*/
-float* getColumn(float* matrix, int rows, int cols, int col_index){
+/*
+float* getColumn(float* matrix, int rows, int col_index){
     float* column = malloc(rows * sizeof(float));
+    printf("Dimensione dataset: %ld\n",sizeof(matrix));
+    printf("rows:%d\n",rows);
     for(int i=0; i<rows; i++){
+        printf("i=%d, ",i);
+        printf("col index=%d, ",col_index);
+        printf("%d\n",i*rows+col_index);
         column[i] = matrix[i*rows + col_index];
     }
+    printf("]\n");
     return column;
 }
-
-float calculate_avg_cf_corr(float* ds, float* labels, int N, int d) {
+*/
+float calculate_avg_cf_corr(float* ds, int* selected_features, int num_chosen_features, float* labels, int N, int d) {
     float total_cf_corr = 0.0;
-    // Calcolo delle correlazioni tra feature e variabile di classe per ogni feature
-    for (int i = 0; i < d; ++i) {
+    // Calcolo delle correlazioni tra feature e variabile di classe per ogni feature selezionata
+    for (int a = 0; a < num_chosen_features; ++a) {
+        int i=selected_features[a];
         float* column = getColumn(ds, N, d, i);
-        float cf_corr = calculate_cf_corr(column, labels, N);
+        float cf_corr = fabsf(calculate_cf_corr(column, labels, N));
         total_cf_corr += cf_corr;
     }
-    // Calcolo del valore medio delle correlazioni tra feature e variabile di classe
-    float avg_cf_corr = total_cf_corr / d;
-    printf("Average Correlation: %f\n", avg_cf_corr);
+    // Calcolo del valore medio delle correlazioni tra feature selezionate e variabile di classe
+    float avg_cf_corr = total_cf_corr / num_chosen_features;
+    //printf("Average Correlation: %f\n", avg_cf_corr);
     return avg_cf_corr;
 }
 
@@ -207,36 +214,49 @@ float calculate_ff_corr(float *feature_x, float *feature_y, int n) {
     }
 
     float r_ff = numerator / (sqrtf(denom_x) * sqrtf(denom_y));
-    printf("Correlation between two features: %f\n", r_ff);
+    //printf("Correlation between two features: %f\n", r_ff);
     return r_ff;
 }
 
-float calculate_avg_ff_corr(float *ds, int N, int d) {
+float calculate_avg_ff_corr(float *ds, int* selected_features, int num_chosen_features, int N, int d) {
     float total_ff_corr = 0.0f;
-    int num_pairs = d * (d - 1) / 2;
-
-    // Calcolo delle correlazioni tra le feature stesse per ogni coppia di feature
+    int num_pairs = num_chosen_features * (num_chosen_features - 1) / 2;
+    if(num_chosen_features==1) {
+        //float* feature = getColumn(ds, N, d, selected_features[0]);
+        //return fabsf(calculate_ff_corr(feature,feature,N));
+        return 1.0;
+    }
+    // Calcolo delle correlazioni tra le feature stesse per ogni coppia di feature selezionate
+    /*
     for (int i = 0; i < d; ++i) {
         for (int j = i + 1; j < d; ++j) {
             float ff_corr = calculate_ff_corr(ds + i * N, ds + j * N, N);
             total_ff_corr += ff_corr;
         }
+    }*/
+    for(int a=0;a<num_chosen_features;a++){
+        float* feature_a = getColumn(ds, N, d, selected_features[a]);
+        for(int b=a+1;b<num_chosen_features;b++){
+            float* feature_b = getColumn(ds, N, d, selected_features[b]);
+            total_ff_corr += fabsf(calculate_ff_corr(feature_a, feature_b, N));
+        }
     }
     // Calcolo del valore medio delle correlazioni tra le feature stesse
     float avg_ff_corr = total_ff_corr / num_pairs;
-    printf("Average correlation between features: %f\n", avg_ff_corr);
+    //printf("Average correlation between features: %f\n", avg_ff_corr);
     return avg_ff_corr;
 }
 //---------------------------------------------------------------
 
 //Funzione per calcolare il merito
 float calculate_merit(float avg_cf_corr, float avg_ff_corr, int k) {
-    float merit = (k * fabsf(avg_cf_corr)) / sqrtf(k + k * (k - 1) * fabsf(avg_ff_corr));
-    printf("Calculated merit: %f\n", merit);
+    float merit = (k * avg_cf_corr) / sqrtf(k + k * (k - 1) * avg_ff_corr);
+    //printf("Calculated merit: %f\n", merit);
     return merit;
 }
 
 
+/*
 void cfs(params* input){
     //proviamo ad invocare la funzione da un altro file
 
@@ -268,6 +288,63 @@ void cfs(params* input){
     float merit = calculate_merit(avg_cf_corr, avg_ff_corr, num_chosen_features);
 
 
+}
+*/
+
+void cfs(params* input){
+
+    float* dataset = input->ds; //dataset definito sull'insieme di features F
+    float* c = input->labels;   //vettore delle etichette
+    int k = input->k;   //numero di features da estrarre
+    int num_features = input->d;    //numero di colonne del dataset, nonché numero di features presenti
+    int N = input->N;   //numero di righe del dataset, nonché dimensione delle singole colonne/features
+
+    int* s = malloc(k * sizeof(int));   //vettore contenente l'insieme S degli indici delle features da estrarre (indici di colonna del dataset)
+    int current_size = 0;   //numero di feature estratte ed inserite correntemente in s
+
+    printf("Inizio della funzione cfs.\nk=%d,\n",k);
+    printf("num_features=%d\n",num_features);
+    printf("N=%d\n",N);
+
+    s[0]=0;
+
+    //stampaMatrice(dataset, N, num_features);
+    printf("Valore iniziale per una colonna:%f\n", calculate_avg_ff_corr(dataset, s, current_size+1, N, num_features));
+
+    float max_merit = -1.0;
+
+    while(current_size<k){
+        int max_merit_feature_index = -1;
+        for(int i=0; i<num_features; i++){
+            int contains = 0;
+            for(int j=0; j<current_size; j++){
+                if(s[j]==i) {
+                    contains=1;
+                    //printf("\nLa feature %d è già contenuta.\n\n",i);
+                    break; //La feature selezionata è già presente nell'insieme S, non va considerata.
+                }
+            }
+            if(contains==1) continue;
+            printf("Considero la feature in posizione:%d\n",i);
+            s[current_size] = i;
+            float current_merit = calculate_merit( calculate_avg_cf_corr(dataset, s, current_size+1, c, N, num_features), calculate_avg_ff_corr(dataset, s, current_size+1, N, num_features), current_size+1 );
+            printf("Merito corrente:%f\n",current_merit);
+            if(current_merit>max_merit){
+                max_merit=current_merit;
+                max_merit_feature_index=i;
+            }
+            
+        }
+        
+        if(max_merit_feature_index<0) printf("\n\nQualcosa è andato storto\n\n");   //debug
+
+        s[current_size] = max_merit_feature_index;
+        current_size++;
+        printf("----------------------------------------\n");
+    }
+
+    input->out = s;
+    input->sc = max_merit;
 
 }
 
