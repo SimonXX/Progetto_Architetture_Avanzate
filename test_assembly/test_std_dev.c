@@ -25,9 +25,9 @@ float calculate_std_dev(float *data, int n) {
 extern void calcola_dev_std(float* risultato, float media, float* data, int n);
 
 int main(){
-    float v[] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0};
-    printf("Deviazione standard:%f\n",calculate_std_dev(v,7));
+    float v[] = {1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0};
+    printf("Deviazione standard:%f\n",calculate_std_dev(v,18));
     float risultato;
-    calcola_dev_std(&risultato, calculate_mean(v,7), v, 7);
+    calcola_dev_std(&risultato, calculate_mean(v,18), v, 18);
     printf("Deviazione standard calcolata:%f\n", risultato);
 }
