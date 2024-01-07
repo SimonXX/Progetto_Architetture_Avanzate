@@ -25,6 +25,9 @@ calcola_dev_std:
     sub edx, 1; salvo n-1
     xorps xmm1, xmm1; varianza=0.0
 
+    cmp ecx, 4
+    jl _rest_loop
+
 _loop:
     movups xmm2, [ebx]
     subps xmm2, xmm0; xi-mean

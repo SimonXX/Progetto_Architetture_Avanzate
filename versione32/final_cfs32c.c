@@ -222,7 +222,7 @@ void cfs(params* input){
     int* s = malloc(k * sizeof(int));
     int current_size = 0;
 
-    s[0]=0;
+    //s[0]=0; non dovrebbe servire, era per debug.
     
     int max_merit_feature_index;
     float max_merit;
