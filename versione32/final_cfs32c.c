@@ -13,7 +13,7 @@
 typedef struct {
     MATRIX ds;
     VECTOR labels;
-    int* out;
+    int* out;\
     type sc;
     int k;
     int N;
