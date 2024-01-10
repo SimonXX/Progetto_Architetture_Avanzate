@@ -104,6 +104,7 @@ void save_out(char* filename, type sc, int* X, int k) {
 }
 
 //extern float calculate_mean(float *data, int n); // Declaration of the assembly function
+extern void calcola_cfs(float* ds, float* c, int k, int num_features, int N, int* out, float* score);
 
 float calculate_mean(float *data, int n) {
     float sum = 0.0;
@@ -208,6 +209,11 @@ float calculate_merit(float avg_cf_corr, float avg_ff_corr, int k) {
     return merit;
 }
 
+void calcola_merito(float* dataset, int* selected_features, int num_chosen_features,float* labels, int N, int d, float* risultato){
+    *risultato = calculate_merit(calculate_avg_cf_corr(dataset, selected_features, num_chosen_features, labels, N, d), calculate_avg_ff_corr(dataset, selected_features, num_chosen_features, N, d), num_chosen_features);
+    return;
+}
+
 void print_merit_info(int current_size, int max_merit_feature_index, float max_merit) {
     printf("Current Size: %d, Max Merit Feature Index: %d, Max Merit: %f\n", current_size, max_merit_feature_index, max_merit);
 }
@@ -221,9 +227,11 @@ void cfs(params* input){
     int N = input->N;
     int* s = malloc(k * sizeof(int));
     int current_size = 0;
-
+    //float score;
+    calcola_cfs(dataset, c, k, num_features, N, input->out, &(input->sc));
+    //input->sc = score;
     //s[0]=0; non dovrebbe servire, era per debug.
-    
+    /*
     int max_merit_feature_index;
     float max_merit;
 
@@ -259,6 +267,7 @@ void cfs(params* input){
 
     input->out = s;
     input->sc = max_merit;
+    */
 }
 
 int main(int argc, char** argv) {
