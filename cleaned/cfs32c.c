@@ -131,9 +131,10 @@ float calculate_avg_cf_corr(float* ds, int* selected_features, int num_chosen_fe
     float total_cf_corr = 0.0;
     for (int a = 0; a < num_chosen_features; ++a) {
         int i=selected_features[a];
-        float* column;
+        float* column = get_block(N,sizeof(float));
         get_column(column, ds, N, d, i);
         float cf_corr = fabsf(calculate_cf_corr(column, labels, N));
+        free_block(column);
         total_cf_corr += cf_corr;
     }
     float avg_cf_corr = total_cf_corr  / num_chosen_features;
@@ -147,24 +148,26 @@ float calculate_avg_ff_corr(float *ds, int* selected_features, int num_chosen_fe
         return 1.0;
     }
     for(int a=0;a<num_chosen_features;a++){
-        float* feature_a;
+        float* feature_a = get_block(N, sizeof(float));
         get_column(feature_a, ds, N, d, selected_features[a]);
         for(int b=a+1;b<num_chosen_features;b++){
-            float* feature_b;
+            float* feature_b = get_block(N, sizeof(float));
             get_column(feature_b, ds, N, d, selected_features[b]);
             float rff;
             float media_a, media_b;
             calcola_media(&media_a, feature_a, N); calcola_media(&media_b, feature_b, N);
             calcola_rff(&rff, feature_a, media_a, feature_b, media_b, N);
+            free_block(feature_b);
             total_ff_corr += fabsf(rff);
         }
+        free_block(feature_a);
     }
     float avg_ff_corr = total_ff_corr / num_pairs;
     return avg_ff_corr;
 }
 
 void calcola_merito(float* dataset, int* selected_features, int num_chosen_features,float* labels, int N, int d, float* risultato){
-    *risultato = (num_chosen_features * calculate_avg_cf_corr(dataset, selected_features, num_chosen_features, labels, N, d)) / sqrtf( num_chosen_features + num_chosen_features(num_chosen_features-1) * calculate_avg_ff_corr(dataset, selected_features, num_chosen_features, N, d) );
+    *risultato = (num_chosen_features * calculate_avg_cf_corr(dataset, selected_features, num_chosen_features, labels, N, d)) / sqrtf( num_chosen_features + num_chosen_features*(num_chosen_features-1) * calculate_avg_ff_corr(dataset, selected_features, num_chosen_features, N, d) );
     return;
 }
 
@@ -185,6 +188,7 @@ int main(int argc, char** argv) {
     clock_t t;
     float time;
     
+    //params* input = get_block(sizeof(params),1);
     params* input = malloc(sizeof(params));
     input->ds = NULL;
     input->labels = NULL;

@@ -302,14 +302,14 @@ void cfs(params* input){
     int* s = malloc(k * sizeof(int));   //vettore contenente l'insieme S degli indici delle features da estrarre (indici di colonna del dataset)
     int current_size = 0;   //numero di feature estratte ed inserite correntemente in s
 
-    printf("Inizio della funzione cfs.\nk=%d,\n",k);
-    printf("num_features=%d\n",num_features);
-    printf("N=%d\n",N);
+    //printf("Inizio della funzione cfs.\nk=%d,\n",k);
+    //printf("num_features=%d\n",num_features);
+    //printf("N=%d\n",N);
 
-    s[0]=0;
+    //s[0]=0;
 
     //stampaMatrice(dataset, N, num_features);
-    printf("Valore iniziale per una colonna:%f\n", calculate_avg_ff_corr(dataset, s, current_size+1, N, num_features));
+    //printf("Valore iniziale per una colonna:%f\n", calculate_avg_ff_corr(dataset, s, current_size+1, N, num_features));
 
     float max_merit = -1.0;
 
@@ -325,10 +325,10 @@ void cfs(params* input){
                 }
             }
             if(contains==1) continue;
-            printf("Considero la feature in posizione:%d\n",i);
+            //printf("Considero la feature in posizione:%d\n",i);
             s[current_size] = i;
             float current_merit = calculate_merit( calculate_avg_cf_corr(dataset, s, current_size+1, c, N, num_features), calculate_avg_ff_corr(dataset, s, current_size+1, N, num_features), current_size+1 );
-            printf("Merito corrente:%f\n",current_merit);
+            //printf("Merito corrente:%f\n",current_merit);
             if(current_merit>max_merit){
                 max_merit=current_merit;
                 max_merit_feature_index=i;
@@ -340,7 +340,7 @@ void cfs(params* input){
 
         s[current_size] = max_merit_feature_index;
         current_size++;
-        printf("----------------------------------------\n");
+        //printf("----------------------------------------\n");
     }
 
     input->out = s;

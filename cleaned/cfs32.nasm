@@ -1,4 +1,4 @@
-;%include "sseutils32.nasm"
+%include "sseutils32.nasm"
 ;%include "final_cfs32c.o"
 section .data
     ;const   dd 1000.0
@@ -39,6 +39,7 @@ extern calcola_merito
     push ecx; pusho il puntatore all'indice delle feature selezionate
     mov ecx, %4
     push ecx; pusho l'indirizzo del dataset
+    ;printss m0
 	call calcola_merito
 	add	esp, 28
 %endmacro

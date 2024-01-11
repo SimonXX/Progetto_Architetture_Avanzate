@@ -1,9 +1,9 @@
 ;%include "sseutils32.nasm"
 section .data
     ;const   dd 1000.0
- ;section .bss			; Sezione contenente dati non inizializzati
- ;	alignb 16
- ;	fl		resd		1
+ section .bss			; Sezione contenente dati non inizializzati
+ 	alignb 16
+ 	fl		resd		1
 section .text
 ;METODO GET_COLUMN IMPLEMENTATO IN ASSEMBLY MEDIANTE TECNICA DEL LOOP UNROLLING
 ;FATTORE DI UNROLL PARI A 8
@@ -21,9 +21,8 @@ get_column:
     mov ecx, [ebp+8]; indirizzo dell'array risultato in cui inserire la colonna estratta
     mov ebx, [ebp+12]; indirizzo del dataset
     mov eax, [ebp+16]; numero di righe
-    
     mov edi, [ebp+24]; colonna scelta
-    
+    mov edx, 0; altrimenti la divisione da Floating point exception
 ;for (int i = 0; i < rows; ++i) {
 ;        column[i] = matrix[i * cols + col_index];
 ;    }
@@ -47,6 +46,7 @@ _loop:
     push edx
     imul edx, esi
     add edx, edi;offset/4
+
 ;1
     movss xmm0, [ebx + edx*4];leggo dataset[i*cols+col_index]
     movss [ecx+esi*4], xmm0;lo copio in column[i]
@@ -113,9 +113,9 @@ _loop:
     jmp _loop
 
 _continue:
-    ; CVTSI2SS xmm0, edx
-    ; movss [fl],xmm0
-    ; printss fl
+    ;CVTSI2SS xmm5, edx
+    ;movss [fl],xmm5
+    ;printss fl
 
     push edx
     imul edx, esi
