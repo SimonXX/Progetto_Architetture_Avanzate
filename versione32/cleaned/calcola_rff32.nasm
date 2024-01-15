@@ -28,7 +28,7 @@ calcola_rff:
     xorps xmm5, xmm5; denomx = 0
     xorps xmm6, xmm6; denomy = 0
 
-    cmp edi, 4
+    cmp edi, 16
     jl _rest_loop
 ;     for (int i = 0; i < n; ++i) {
 ;         numerator += (feature_x[i] - mean_x) * (feature_y[i] - mean_y);
@@ -44,11 +44,6 @@ _loop:
     subps xmm2, xmm0; calcolo x[i]-meanx
     subps xmm3, xmm1; calcolo y[i]-meany
 
-;    movss [fl], xmm2
-;    printss fl
-
-;    movss [fl], xmm3
-;    printss fl
     movaps xmm7, xmm2
     mulps xmm7, xmm3; calcolo delta numeratore
     addps xmm4, xmm7; aggiorno numeratore
@@ -60,8 +55,62 @@ _loop:
 
     add eax, 16; aggiorno l'indirizzo di x
     add ebx, 16; aggiorno l'indirizzo di y, 4 float più avanti
-    sub edi, 4; aggiorno la dimensione 
-    cmp edi, 3
+
+    ; 2
+    movaps xmm2, [eax]; carico x
+    movaps xmm3, [ebx]; carico y
+    subps xmm2, xmm0; calcolo x[i]-meanx
+    subps xmm3, xmm1; calcolo y[i]-meany
+
+    movaps xmm7, xmm2
+    mulps xmm7, xmm3; calcolo delta numeratore
+    addps xmm4, xmm7; aggiorno numeratore
+    mulps xmm2, xmm2; calcolo il quadrato
+    mulps xmm3, xmm3; calcolo il quadrato
+    addps xmm5, xmm2; aggiorno denomx
+    addps xmm6, xmm3; aggiorno denomy
+
+
+    add eax, 16; aggiorno l'indirizzo di x
+    add ebx, 16; aggiorno l'indirizzo di y, 4 float più avanti
+    ;3
+    movaps xmm2, [eax]; carico x
+    movaps xmm3, [ebx]; carico y
+    subps xmm2, xmm0; calcolo x[i]-meanx
+    subps xmm3, xmm1; calcolo y[i]-meany
+
+    movaps xmm7, xmm2
+    mulps xmm7, xmm3; calcolo delta numeratore
+    addps xmm4, xmm7; aggiorno numeratore
+    mulps xmm2, xmm2; calcolo il quadrato
+    mulps xmm3, xmm3; calcolo il quadrato
+    addps xmm5, xmm2; aggiorno denomx
+    addps xmm6, xmm3; aggiorno denomy
+
+
+    add eax, 16; aggiorno l'indirizzo di x
+    add ebx, 16; aggiorno l'indirizzo di y, 4 float più avanti
+    ;4
+    movaps xmm2, [eax]; carico x
+    movaps xmm3, [ebx]; carico y
+    subps xmm2, xmm0; calcolo x[i]-meanx
+    subps xmm3, xmm1; calcolo y[i]-meany
+
+    movaps xmm7, xmm2
+    mulps xmm7, xmm3; calcolo delta numeratore
+    addps xmm4, xmm7; aggiorno numeratore
+    mulps xmm2, xmm2; calcolo il quadrato
+    mulps xmm3, xmm3; calcolo il quadrato
+    addps xmm5, xmm2; aggiorno denomx
+    addps xmm6, xmm3; aggiorno denomy
+
+
+    add eax, 16; aggiorno l'indirizzo di x
+    add ebx, 16; aggiorno l'indirizzo di y, 4 float più avanti
+
+
+    sub edi, 16; aggiorno la dimensione 
+    cmp edi, 15
     jg _loop
 _rest_loop:
     ; movss [fl], xmm5
