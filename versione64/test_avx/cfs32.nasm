@@ -1,33 +1,24 @@
 %include "sseutils64.nasm"
+;%include "final_cfs32c.o"
 section .data
     ;const   dd 1000.0
  section .bss			; Sezione contenente dati non inizializzati
  	alignb 32
  	;fl	resd 1
     ;output resd 1
-    ;score resq 1
-    labels resq 1
-    k resq 1
-    num_features resq 1
+    score resd 1
+    labels resd 1
+    k resd 1
+    num_features resd 1
     merito_corrente resq 1
-    N resq 1
-    dataset resq 1
-    ou resq 1
-    ;a resd 1
-    b resq 1
-    sir resq 1
-    ;k10 resq 1
-    ;k11 resq 1
-    ;k12 resq 1
-    ;k13 resq 1
-    ;k14 resq 1
-    ;k15 resq 1
-    c resq 1
-    ;d resd 1
-    ;ed resd 1
-    i resq 1
+    N resd 1
+    a resd 1
+    b resd 1
+    c resd 1
+    d resd 1
+    ed resd 1
+    i resd 1
     m0 resq 1
-    m1 resq 1
 
 section .text
 extern calcola_merito
@@ -39,32 +30,22 @@ extern calcola_merito
 ;R8 = n
 ;R9 = d
 ;MERITO CALCOLATO IN XMM0
-%macro	merito	0
-    ;pushaq
-	mov RDI, [dataset]
-    mov RSI, [ou]
-    mov RDX, [i]
-    mov RCX, [labels]
-    mov R8, [N]
-    mov R9, [num_features]
-    ; Controlla l'allineamento corrente di rsp
-    mov rax, rsp
-    and rax, 0xF ; Maschera con 0xF (15 in decimale) per ottenere i primi 4 bit
-    cmp rax, 0   ; Verifica se i primi 4 bit sono 0
-    je  allineato ; Salta se già allineato
-
-    ; Se non è allineato, regola rsp per garantire l'allineamento
-    sub rsp, rax
-
-allineato:
+%macro	merito	6
+    pushaq
+	mov RDI, %1
+    mov RSI, %2
+    mov RDX, %3
+    mov RCX, %4
+    mov R8, %5
+    mov R9, %6
 	call calcola_merito
 	vmovsd [merito_corrente], xmm0
-    ;popaq
+    popaq
 %endmacro
 
-global calcola_cfs3
-; double calcola_cfs(double* ds, double* c, int k, int num_features, int N, int* out)
-calcola_cfs3:
+global calcola_cfs
+; void calcola_cfs(double* ds, double* c, int k, int num_features, int N, int* out, double* score)
+calcola_cfs:
     ; ------------------------------------------------------------
 	; Sequenza di ingresso nella funzione
 	; ------------------------------------------------------------
@@ -77,12 +58,13 @@ calcola_cfs3:
     ;RCX contiene num_features
     ;R8 contiene N
     ;R9 contiene out (corrisponde con l'insieme S), era EDX
+    ;sullo stack è presente score.
+    pop R11;sposto score.
+    mov [score], R11
     mov [labels], RSI
     mov [k], RDX
     mov [num_features], RCX
     mov [N], R8
-    mov [dataset], RDI
-    mov [ou], R9
     
     xor RAX, RAX; current_size=0
     ;RAX = vecchio esi. indice.
@@ -94,9 +76,7 @@ _while:
     jge _end
     mov RBX, -1; max_merit_feature_index = -1
     ;RBX è il vecchio EBX.
-    VCVTSI2SD xmm0, rbx; max_merit=-1.0
-    ;vxorpd ymm0, ymm0; max_merit=0.0
-    vxorpd ymm1, ymm1
+    vxorpd ymm0, ymm0; max_merit=0.0
     xor RSI, RSI
     ;RSI è il vecchio edi
     _for:
@@ -104,11 +84,11 @@ _while:
         jge _aggiorna_while
         xor RCX, RCX; indice, vecchio ECX
         _for_interno:
-            cmp RCX, RAX
-            jge _continua
             cmp RSI, [R9+RCX*4]
             je _true
-            inc RCX            
+            inc RCX
+            cmp RCX, RAX
+            jge _continua
             jmp _for_interno
         _true:
             inc RSI
@@ -116,34 +96,15 @@ _while:
     _continua:
         mov [R9+RAX*4], RSI; s[current_size]=i
         ;calcolo merito corrente:
-        
-;calcola_merito(double* dataset, int* selected_features, int num_chosen_features,double* labels, int N, int d){
         inc RAX
-        mov [i], RAX
-        mov [b], RBX
-        mov [sir], RSI
-        ;mov [dataset], RDI
-        mov [N], R8
-        mov [ou], R9
-        ;vmovsd [m1], xmm1
-        vmovsd [m0], xmm0
-        ;pushaq
-        merito
-        mov RAX, qword [i]
-        ;popaq
-        sub RAX, 1
-        mov RBX, qword [b]
-        mov RSI, qword [sir]
-        ;mov RDI, qword [dataset]
-        mov R8, qword [N]
-        mov r9, qword [ou]
+;calcola_merito(double* dataset, int* selected_features, int num_chosen_features,double* labels, int N, int d){
 
-        vmovsd xmm1, [merito_corrente]
-        vmovsd xmm0, [m0]
+        merito RDI, R9, RAX, [labels], [N], [num_features]
+        sub RAX, 1
+        vmovsd xmm0, [merito_corrente]
         vucomisd xmm1, xmm0
         jbe _skippa
         vmovsd xmm0, xmm1
-        ;vmovsd [m0], xmm0
         mov RBX, RSI
     _skippa:
         inc RSI
@@ -154,7 +115,8 @@ _aggiorna_while:
     jmp _while
 
 _end:
-    ;vmovsd xmm0, [m0]
+    mov RAX, [score]
+    vmovsd [RAX], xmm0
     
     mov rsp, rbp; ripristina lo Stack Pointer
 	pop rbp; ripristina il Base Pointer

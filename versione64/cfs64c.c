@@ -200,14 +200,130 @@ void save_out(char* filename, type sc, int* X, int k) {
 	fclose(fp);
 }
 
-// PROCEDURE ASSEMBLY
+extern double calcola_dev_std(double media, double* data, int n);
+extern double calcola_rff(double* feature_x, double mean_x, double* feature_y, double mean_y, int n);
+extern void get_column(double* risultato, double* dataset, int rows, int columns, int choosed_col);
+extern double calcola_media(double* array, int n);
 
-extern void prova(params* input);
+double calculate_cf_corr(double *feature, double *labels, int n) {
+    //DEPRECATED
+    double mean_0 = 0.0, mean_1 = 0.0;
+    int count_0 = 0, count_1 = 0;
+
+    for (int i = 0; i < n; ++i) {
+        if (labels[i] == 0) {
+            mean_0 += feature[i];
+            count_0++;
+        } else {
+            mean_1 += feature[i];
+            count_1++;
+        }
+    }
+
+    mean_0 /= count_0;
+    mean_1 /= count_1;
+
+    double std_dev;
+    double media = calcola_media(feature, n);
+    std_dev = calcola_dev_std(media, feature, n);
+
+    double r_cf = ((mean_0 - mean_1) / std_dev) * sqrt((count_0 * count_1) / pow(n, 2));
+    return r_cf;
+}
+
+double calculate_avg_cf_corr(double* ds, int* selected_features, int num_chosen_features, double* labels, int N, int d) {
+    double total_cf_corr = 0.0;
+    for (int a = 0; a < num_chosen_features; ++a) {
+        int i=selected_features[a];
+        double* column = get_block(N,sizeof(double));
+        get_column(column, ds, N, d, i);
+        double cf_corr = fabs(calculate_cf_corr(column, labels, N));
+        free_block(column);
+        total_cf_corr += cf_corr;
+    }
+    double avg_cf_corr = total_cf_corr  / num_chosen_features;
+    return avg_cf_corr;
+}
+
+double calculate_avg_ff_corr(double *ds, int* selected_features, int num_chosen_features, int N, int d) {
+    double total_ff_corr = 0.0f;
+    int num_pairs = num_chosen_features * (num_chosen_features - 1) / 2;
+    if(num_chosen_features==1) {
+        return 1.0;
+    }
+    for(int a=0;a<num_chosen_features;a++){
+        double* feature_a = get_block(N, sizeof(double));
+        get_column(feature_a, ds, N, d, selected_features[a]);
+        for(int b=a+1;b<num_chosen_features;b++){
+            double* feature_b = get_block(N, sizeof(double));
+            get_column(feature_b, ds, N, d, selected_features[b]);
+            double rff;
+            double media_a, media_b;
+            media_a = calcola_media(feature_a, N);
+			media_b = calcola_media(feature_b, N);
+            rff = calcola_rff(feature_a, media_a, feature_b, media_b, N);
+            free_block(feature_b);
+            total_ff_corr += fabs(rff);
+        }
+        free_block(feature_a);
+    }
+    double avg_ff_corr = total_ff_corr / num_pairs;
+    return avg_ff_corr;
+}
+
+double calcola_merito(double* dataset, int* selected_features, int num_chosen_features,double* labels, int N, int d){
+	double toRet= (num_chosen_features * calculate_avg_cf_corr(dataset, selected_features, num_chosen_features, labels, N, d)) / sqrt( num_chosen_features + num_chosen_features*(num_chosen_features-1) * calculate_avg_ff_corr(dataset, selected_features, num_chosen_features, N, d) );
+	return toRet;
+}
+//extern void prova(params* input);
+
+//extern double calcola_cfs(double* ds, double* labels, int k, int cols, int rows, int* out);
+
+double calcola_cfs(double* dataset, double* c, int k, int num_features, int N, int* s){
+	double max_merit;
+	int current_size = 0;
+
+    while(current_size<k){
+		max_merit = -1.0;
+        int max_merit_feature_index = -1;
+        for(int i=0; i<num_features; i++){
+            int contains = 0;
+            for(int j=0; j<current_size; j++){
+                if(s[j]==i) {
+                    contains=1;
+                    //printf("\nLa feature %d è già contenuta.\n\n",i);
+                    break; //La feature selezionata è già presente nell'insieme S, non va considerata.
+                }
+            }
+            if(contains==1) continue;
+            //printf("Considero la feature in posizione:%d\n",i);
+            s[current_size] = i;
+            double current_merit = calcola_merito(dataset, s, current_size+1, c, N, num_features);
+            //printf("Merito corrente:%f\n",current_merit);
+            if(current_merit>max_merit){
+                max_merit=current_merit;
+                max_merit_feature_index=i;
+            }
+            
+        }
+        
+        if(max_merit_feature_index<0) printf("\n\nQualcosa è andato storto%d\n\n",current_size);   //debug
+
+        s[current_size] = max_merit_feature_index;
+        current_size++;
+        //printf("----------------------------------------\n");
+    }
+	return max_merit;
+}
+
 
 void cfs(params* input){
-	// ------------------------------------------------------------
-	// Codificare qui l'algoritmo di Correlation Features Selection
-	// ------------------------------------------------------------
+	double* dataset = input->ds;
+    double* c = input->labels;
+    int k = input->k;
+    int num_features = input->d;
+    int N = input->N;
+    input->sc = calcola_cfs(dataset, c, k, num_features, N, input->out);
 }
 
 int main(int argc, char** argv) {
@@ -223,6 +339,7 @@ int main(int argc, char** argv) {
 	//
 
 	params* input = malloc(sizeof(params));
+	//params* input = get_block(1,sizeof(params));
 
 	input->ds = NULL;
 	input->labels = NULL;
@@ -232,7 +349,7 @@ int main(int argc, char** argv) {
 	input->silent = 0;
 	input->display = 0;
 
-	printf("%i\n", sizeof(int));
+	printf("%li\n", sizeof(int));
 
 	//
 	// Visualizza la sintassi del passaggio dei parametri da riga comandi
@@ -323,6 +440,8 @@ int main(int argc, char** argv) {
 	}
 
 	input->out = alloc_int_matrix(input->k, 1);
+	//printf("indirizzo: %p\n",input->out);
+	//printf("indirizzo ds: %p\n",input->ds);
 
 	//
 	// Visualizza il valore dei parametri
@@ -337,7 +456,7 @@ int main(int argc, char** argv) {
 	}
 
 	// COMMENTARE QUESTA RIGA!
-	prova(input);
+	//prova(input);
 	//
 
 	//

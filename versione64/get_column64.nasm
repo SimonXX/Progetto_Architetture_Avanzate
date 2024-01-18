@@ -1,4 +1,4 @@
-;%include "sseutils32.nasm"
+%include "sseutils64.nasm"
 section .data
 section .text
 ;METODO GET_COLUMN IMPLEMENTATO IN ASSEMBLY MEDIANTE TECNICA DEL LOOP UNROLLING
@@ -33,6 +33,7 @@ get_column:
     imul RAX, 16
     cmp RAX, 0
     je _prepare_loop_rest
+    vxorpd ymm0, ymm0
 _loop:
     cmp RDI, RAX
     jge _continue
@@ -86,6 +87,7 @@ _loop:
     vmovsd xmm0, [RSI+RCX*8]
     vmovsd [R9+RDI*8], xmm0
 ;8
+
     inc RDI
     mov RCX, RBX
     imul RCX, RDI
@@ -151,6 +153,7 @@ _loop:
 
     inc RDI
     mov RCX, RBX
+
 
     jmp _loop
 

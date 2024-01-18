@@ -87,11 +87,13 @@ _while:
         jge _aggiorna_while
         mov ecx, 0; indice
         _for_interno:
+            cmp ecx, esi
+            jge _continua
+
             cmp edi, [edx+ecx*4]
             je _true
             inc ecx
-            cmp ecx, esi
-            jge _continua
+            
             jmp _for_interno
         _true:
             inc edi
