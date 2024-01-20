@@ -101,10 +101,8 @@ extern void calcola_media(float* risultato, float* array, int n);
 extern void calcola_cfs(float* ds, float* c, int k, int num_features, int N, int* out, float* score);
 
 float calculate_cf_corr(float *feature, float *labels, int n) {
-    //DEPRECATED
     float mean_0 = 0.0, mean_1 = 0.0;
     int count_0 = 0, count_1 = 0;
-
     for (int i = 0; i < n; ++i) {
         if (labels[i] == 0) {
             mean_0 += feature[i];
@@ -129,6 +127,7 @@ float calculate_cf_corr(float *feature, float *labels, int n) {
 
 float calculate_avg_cf_corr(float* ds, int* selected_features, int num_chosen_features, float* labels, int N, int d) {
     float total_cf_corr = 0.0;
+    #pragma omp parallel for
     for (int a = 0; a < num_chosen_features; ++a) {
         int i=selected_features[a];
         float* column = get_block(N,sizeof(float));
@@ -141,19 +140,9 @@ float calculate_avg_cf_corr(float* ds, int* selected_features, int num_chosen_fe
     return avg_cf_corr;
 }
 
-float calculate_avg_ff_corr(float *ds, int* selected_features, int num_chosen_features, int N, int d) {
-    float total_ff_corr = 0.0f;
-    int num_pairs = num_chosen_features * (num_chosen_features - 1) / 2;
-    if(num_chosen_features==1) {
-        return 1.0;
-    }
-    for(int a=0;a<num_chosen_features;a++){
-        float* feature_a = get_block(N, sizeof(float));
-        float media_a;
-        calcola_media(&media_a, feature_a, N);
-        get_column(feature_a, ds, N, d, selected_features[a]);
-        float* feature_b = get_block(N, sizeof(float));
-        for(int b=a+1;b<num_chosen_features;b++){
+float secondo_for(int a, int* selected_features, int num_chosen_features, float* feature_b, float* feature_a, float media_a, float* ds, int N, int d){
+    float total_ff_corr=0.0;
+    for(int b=a+1;b<num_chosen_features;b++){
             get_column(feature_b, ds, N, d, selected_features[b]);
             float rff;
             float media_b;
@@ -161,6 +150,26 @@ float calculate_avg_ff_corr(float *ds, int* selected_features, int num_chosen_fe
             calcola_rff(&rff, feature_a, media_a, feature_b, media_b, N);
             total_ff_corr += fabsf(rff);
         }
+        return total_ff_corr;
+}
+
+
+float calculate_avg_ff_corr(float *ds, int* selected_features, int num_chosen_features, int N, int d) {
+    float total_ff_corr = 0.0f;
+    int num_pairs = num_chosen_features * (num_chosen_features - 1) / 2;
+    if(num_chosen_features==1) {
+        return 1.0;
+    }
+    #pragma omp parallel for
+    for(int a=0;a<num_chosen_features;a++){
+        float* feature_a = get_block(N, sizeof(float));
+        float media_a;
+        calcola_media(&media_a, feature_a, N);
+        get_column(feature_a, ds, N, d, selected_features[a]);
+        float* feature_b = get_block(N, sizeof(float));
+        
+        total_ff_corr += secondo_for(a, selected_features, num_chosen_features, feature_b, feature_a, media_a, ds, N, d);
+
         free_block(feature_a);
         free_block(feature_b);
     }

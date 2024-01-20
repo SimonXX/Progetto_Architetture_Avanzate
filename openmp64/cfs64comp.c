@@ -233,6 +233,7 @@ double calculate_cf_corr(double *feature, double *labels, int n) {
 
 double calculate_avg_cf_corr(double* ds, int* selected_features, int num_chosen_features, double* labels, int N, int d) {
     double total_cf_corr = 0.0;
+	//#pragma omp parallel for -> segmentation fault.
     for (int a = 0; a < num_chosen_features; ++a) {
         int i=selected_features[a];
         double* column = get_block(N,sizeof(double));
@@ -251,6 +252,7 @@ double calculate_avg_ff_corr(double *ds, int* selected_features, int num_chosen_
     if(num_chosen_features==1) {
         return 1.0;
     }
+	//#pragma omp parallel for -> segmentation fault.
     for(int a=0;a<num_chosen_features;a++){
         double* feature_a = get_block(N, sizeof(double));
         get_column(feature_a, ds, N, d, selected_features[a]);
@@ -286,8 +288,10 @@ double calcola_cfs(double* dataset, double* c, int k, int num_features, int N, i
     while(current_size<k){
 		max_merit = -1.0;
         int max_merit_feature_index = -1;
+		#pragma omp parallel for
         for(int i=0; i<num_features; i++){
             int contains = 0;
+			//#pragma omp parallel for
             for(int j=0; j<current_size; j++){
                 if(s[j]==i) {
                     contains=1;
