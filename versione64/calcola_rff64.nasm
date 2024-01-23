@@ -1,8 +1,10 @@
 ;%include "sseutils32.nasm"
 section .data
     ;const   dd 1000.0
- ;section .bss			; Sezione contenente dati non inizializzati
-; 	alignb 16
+section .bss			; Sezione contenente dati non inizializzati
+ 	alignb 32
+    m0 resq 1
+    m1 resq 1
 ; 	fl		resd		1
 section .text
     ;double calcola_rff(double* feature_x, double mean_x, double* feature_y, double mean_y, int n);
@@ -19,9 +21,10 @@ calcola_rff:
     ;xmm1 contiene mean_y
     ;RDX contiene il valore di n
 
-    
-    VBROADCASTSD ymm0, xmm0; ricopio il valore di mean_x in ogni celletta del registro
-    VBROADCASTSD ymm1, xmm1; ricopio il valore di mean_y in ogni celletta
+    vmovsd [m0], xmm0
+    vmovsd [m1], xmm1
+    VBROADCASTSD ymm0, [m0]; ricopio il valore di mean_x in ogni celletta del registro
+    VBROADCASTSD ymm1, [m1]; ricopio il valore di mean_y in ogni celletta
     vxorpd ymm4, ymm4, ymm4; numerator = 0
     vxorpd ymm5, ymm5, ymm5; denomx = 0
     vxorpd ymm6, ymm6, ymm6; denomy = 0

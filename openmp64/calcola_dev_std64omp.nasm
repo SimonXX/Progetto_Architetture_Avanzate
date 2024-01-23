@@ -1,8 +1,9 @@
 ;%include "sseutils64.nasm"
 section .data
     ;const   dd 1000.0
-;section .bss			; Sezione contenente dati non inizializzati
-; 	alignb 32
+section .bss			; Sezione contenente dati non inizializzati
+ 	alignb 32
+    m0 resq 1
 ; 	prova		resq		1
 section .text
     ;void calcola_dev_std(double media, double* data, int n);
@@ -19,7 +20,8 @@ calcola_dev_std:
     ;RSI contiene il valore di n
     ;XMM0 contiene il valore di media
     ;VMOVSD [media], xmm0
-    VBROADCASTSD ymm0, xmm0; ricopio il valore della media in ogni celletta
+    vmovsd [m0], xmm0
+    VBROADCASTSD ymm0, [m0]; ricopio il valore della media in ogni celletta
     mov rdx, rsi; copio n
     sub rdx, 1; salvo n-1
     VXORPD ymm1, ymm1, ymm1; varianza=0.0
